@@ -34,9 +34,12 @@ class Player:
         rospy.logwarn('I am ' + self.player_name + ' and I am on team ' + self.my_team + ' . ' + self.prey_team + ' are going to die ')
         rospy.loginf('I am ' + str(self.hunters))
 
-    def makeAPlayCallBack(self):
-        print('Received make a play ...')
+    # subscribe  make a play
+    rospy.Subscriber("make_a_play", MakeAPlay, self.makeAPlayCallBack)
 
+    def makeAPlayCallBack(self, msg):
+        self.max_vel = msg.turtle
+        print('Received make a play . My max velocity is ...' + str(self.max_vel))
 
 def callback(msg):
     print("Received msg containing string" + msg.data)
