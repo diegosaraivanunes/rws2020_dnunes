@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 import math
-
+from random import random
 import numpy
 import rospy
 import tf
+
 from geometry_msgs.msg import Transform, Quaternion
 from rws2020_msgs.msg import MakeAPlay
 from std_msgs.msg import String
+
 
 class Player:
 
@@ -41,8 +43,14 @@ class Player:
         rospy.Subscriber("make_a_play", MakeAPlay, self.makeAPlayCallBack)
         self.br = tf.TransformBroadcaster()
         self.transform = Transform()
-        self.transform.translation.x = 4
-        self.transform.translation.y = -4
+
+        Initial_R = 8 * random.random()
+        Initial_Theta = 2 * math.pi * random.random()
+        Initial_X = Initial_R * math.cos(Initial_Theta)
+        Initial_Y = Initial_R * math.sin(Initial_Theta)
+        Initial_Rotation = 2 * math.pi * random.random()
+        self.transform.translation.x = Initial_X
+        self.transform.translation.y = Initial_Y
 
     def makeAPlayCallBack(self, msg):
 
@@ -53,8 +61,6 @@ class Player:
         # Make a play
         vel = self.max_vel  # full throttle
         angle = self.max_angle
-
-
 
         self.move(self.transform, vel/10, angle)
 
@@ -108,7 +114,7 @@ class Player:
 
 
 def callback(msg):
-    print("Recevied a message containing string " + msg.data)
+    print("Received a message containing string " + msg.data)
 
 
 def main():
