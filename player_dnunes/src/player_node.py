@@ -101,7 +101,7 @@ class Player:
         self.transform.rotation = Quaternion(quat[0], quat[1], quat[2], quat[3])
         self.transform.translation.x = trans[0]
         self.transform.translation.y = trans[1]
-        self.transform.translation.z = trans[0]
+        self.transform.translation.z = trans[2]
 
         self.br.sendTransform(trans, quat, rospy.Time.now(),
                               self.player_name, "world")
