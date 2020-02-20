@@ -8,7 +8,6 @@ from geometry_msgs.msg import Transform, Quaternion
 from rws2020_msgs.msg import MakeAPlay
 from std_msgs.msg import String
 
-
 class Player:
 
     def __init__(self, player_name):
