@@ -3,11 +3,17 @@ import random
 
 import math
 
+import numpy as np
 import rospy
 import tf
 from geometry_msgs.msg import Transform, Quaternion
 from rws2020_msgs.msg import MakeAPlay
-from rws2020_lib.utils import movePlayer, randomizePlayerPose, getDistanceAndAngleToTarget
+# from rws2020_lib.utils import movePlayer, randomizePlayerPose, getDistanceAndAngleToTarget
+import random
+import math
+import rospy
+import tf
+from geometry_msgs.msg import Transform, Quaternion
 import numpy as np
 
 
