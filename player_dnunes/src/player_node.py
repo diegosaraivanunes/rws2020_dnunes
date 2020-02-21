@@ -115,6 +115,21 @@ class Player():
         self.player_name = player_name
         self.listener = tf.TransformListener()
 
+        self.m = Marker(ns=self.player_name, id=0, type=Marker.TEXT_VIEW_FACING, action=Marker.ADD)
+        self.m.header.frame_id = "moliveira"
+        self.m.header.stamp = rospy.Time.now()
+        self.m.pose.position.y = 0.5
+        self.m.pose.orientation.w = 1.0
+        self.m.scale.z = 1.1
+        self.m.color.a = 1.0
+        self.m.color.r = 0.0
+        self.m.color.g = 0.0
+        self.m.color.b = 0.0
+        self.m.text = "Nada a declarar"
+        self.m.lifetime = rospy.Duration(3)
+
+        self.pub_bocas = rospy.Publisher('/bocas', Marker, queue_size=1)
+
         red_team = rospy.get_param('/red_team')
         green_team = rospy.get_param('/green_team')
         blue_team = rospy.get_param('/blue_team')
@@ -155,12 +170,21 @@ class Player():
 
             vel = max_vel  # full throttle
             rospy.loginfo(self.player_name + ': Hunting ' + str(target) + '(' + str(distance) + ' away)')
+
+            self.m.header.stamp = rospy.Time.now()
+            self.m.text = 'Oh ' + target + ' tas tramado!'
+            self.pub_bocas.publish(self.m)
+
         else:  # what else to do? Lets just move towards the center
             target = 'world'
             distance, angle = getDistanceAndAngleToTarget(self.listener, self.player_name, target)
             vel = max_vel  # full throttle
             rospy.loginfo(self.player_name + ': Moving to the center of the arena.')
             rospy.loginfo('I am ' + str(distance) + ' from ' + target)
+
+            self.m.header.stamp = rospy.Time.now()
+            self.m.text = 'Nada para fazer.'
+            self.pub_bocas.publish(self.m)
 
         # Actually move the player
         movePlayer(self.br, self.player_name, self.transform, vel, angle, max_vel)
