@@ -1,12 +1,7 @@
 #!/usr/bin/env python
-import random
-
-import math
 
 import numpy as np
-import rospy
 import tf
-from geometry_msgs.msg import Transform, Quaternion
 from rws2020_msgs.msg import MakeAPlay
 # from rws2020_lib.utils import movePlayer, randomizePlayerPose, getDistanceAndAngleToTarget
 import random
@@ -16,6 +11,7 @@ import tf
 from geometry_msgs.msg import Transform, Quaternion
 import numpy as np
 
+from visualization_msgs.msg import Marker
 
 def getDistanceAndAngleToTarget(tf_listener, my_name, target_name,
                                 time=rospy.Time(0), max_time_to_wait=1.0):
@@ -115,12 +111,13 @@ class Player():
         self.player_name = player_name
         self.listener = tf.TransformListener()
 
-        self.m = Marker(ns=self.player_name, id=0, type=Marker.TEXT_VIEW_FACING, action=Marker.ADD)
+
+        self.m = Marker(ns=self.player_name, id=0, type= Marker.TEXT_VIEW_FACING, action=Marker.ADD)
         self.m.header.frame_id = "moliveira"
         self.m.header.stamp = rospy.Time.now()
         self.m.pose.position.y = 0.5
         self.m.pose.orientation.w = 1.0
-        self.m.scale.z = 1.1
+        self.m.scale.z = 0.3
         self.m.color.a = 1.0
         self.m.color.r = 0.0
         self.m.color.g = 0.0
