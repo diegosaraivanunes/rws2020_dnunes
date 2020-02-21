@@ -167,6 +167,5 @@ def main():
     player = Player('dnunes')
     rospy.spin()
 
-
 if __name__ == "__main__":
     main()
