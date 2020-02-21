@@ -30,11 +30,7 @@ def getDistanceAndAngleToTarget(tf_listener, my_name, target_name,
 
 
 def randomizePlayerPose(transform, arena_radius=4):
-    """
-    Randomizes the initial pose of a player. Based on the code by MGomes.
-    :param transform: a geometry_msgs.msg.Transform() which will have the values of x,y and yaw randomized.
-    :param arena_radius: the radius of the arena inside which the player can be positioned.
-    """
+
     initial_r = arena_radius
     initial_theta = 2 * math.pi
     initial_x = initial_r * math.cos(initial_theta)
@@ -47,16 +43,7 @@ def randomizePlayerPose(transform, arena_radius=4):
 
 
 def movePlayer(tf_broadcaster, player_name, transform_now, vel, angle, max_vel):
-    """
-    Moves a player given its currrent pose, a velocity, and angle, and a maximum velocity
-    :param tf_broadcaster: Used to publish the new pose of the player
-    :param player_name:  string with the name of the player (must coincide with the name of the tf frame_id)
-    :param transform_now: a geometry_msgs.msg.Transform() containing the current pose. This variable is updated with
-                          the new player pose
-    :param vel: velocity of displacement to take in x axis
-    :param angle: angle to turn, limited by max_angle (pi/30)
-    :param max_vel: maximum velocity or displacement based on the selected animal
-    """
+
     max_angle = math.pi / 30
 
     if angle > max_angle:
@@ -113,7 +100,7 @@ class Player():
 
 
         self.m = Marker(ns=self.player_name, id=0, type= Marker.TEXT_VIEW_FACING, action=Marker.ADD)
-        self.m.header.frame_id = "moliveira"
+        self.m.header.frame_id = "dnunes"
         self.m.header.stamp = rospy.Time.now()
         self.m.pose.position.y = 0.5
         self.m.pose.orientation.w = 1.0
