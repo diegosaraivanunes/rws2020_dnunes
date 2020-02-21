@@ -43,14 +43,24 @@ class Player:
         rospy.Subscriber("make_a_play", MakeAPlay, self.makeAPlayCallBack)
         self.br = tf.TransformBroadcaster()
         self.transform = Transform()
+        # Initial_R = 8 * random.random()
+        # Initial_Theta = 2 * math.pi * random.random()
+        # Initial_X = Initial_R * math.cos(Initial_Theta)
+        # Initial_Y = Initial_R * math.sin(Initial_Theta)
+        # Initial_Rotation = 2 * math.pi * random.random()
+        # self.transform.translation.x = Initial_X
+        # self.transform.translation.y = Initial_Y
+        # # q = tf.transformations.quaternion_from_euler(0, 0, Initial_Rotation)
+        # self.transform.rotation = Quaternion( q[0], q[1], q[2], q[3])
 
-        Initial_R = 8 * random.random()
-        Initial_Theta = 2 * math.pi * random.random()
-        Initial_X = Initial_R * math.cos(Initial_Theta)
-        Initial_Y = Initial_R * math.sin(Initial_Theta)
-        Initial_Rotation = 2 * math.pi * random.random()
-        self.transform.translation.x = Initial_X
-        self.transform.translation.y = Initial_Y
+        self.transform.translation.x = 1
+        self.transform.translation.y = 2
+        self.transform.translation.z = 0
+        # self.transform.rotation.x = 0
+        # self.transform.rotation.y = 0
+        # self.transform.rotation.z = 0
+        self.transform.rotation.w = 1
+
 
     def makeAPlayCallBack(self, msg):
 
@@ -87,7 +97,7 @@ class Player:
                                                            T2.rotation[1],
                                                            T2.rotation[2],
                                                            T2.rotation[3]))
-        matrixT2 = numpy.matmul(matrix_trans, matrix_rot)
+        matrixT2 = np.matmul(matrix_trans, matrix_rot)
 
         matrix_trans = tf.transformations.translation_matrix((T1.translation.x,
                                                               T1.translation.y,
@@ -97,9 +107,9 @@ class Player:
                                                            T1.rotation.y,
                                                            T1.rotation.z,
                                                            T1.rotation.w))
-        matrixT1 = numpy.matmul(matrix_trans, matrix_rot)
+        matrixT1 = np.matmul(matrix_trans, matrix_rot)
 
-        matrix_new_transform = numpy.matmul(matrixT2, matrixT1)
+        matrix_new_transform = np.matmul(matrixT2, matrixT1)
 
         quat = tf.transformations.quaternion_from_matrix(matrix_new_transform)
         trans = tf.transformations.translation_from_matrix(matrix_new_transform)
@@ -109,12 +119,11 @@ class Player:
         self.transform.translation.y = trans[1]
         self.transform.translation.z = trans[2]
 
-        self.br.sendTransform(trans, quat, rospy.Time.now(),
-                              self.player_name, "world")
+        self.br.sendTransform(trans, quat, rospy.Time.now(), self.player_name, "world")
 
 
 def callback(msg):
-    print("Received a message containing string " + msg.data)
+    print("Recevied a message containing string " + msg.data)
 
 
 def main():
@@ -123,7 +132,7 @@ def main():
     rospy.init_node('dnunes', anonymous=False)
     player = Player('dnunes')
 
-    # rospy.Subscriber("chatter", String, callback)
+    rospy.Subscriber("chatter", String, callback)
     rospy.spin()
 
 
