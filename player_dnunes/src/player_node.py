@@ -1,19 +1,22 @@
 #!/usr/bin/env python
+import random
+
 import math
-from random import random
-import numpy
+
+import numpy as np
 import rospy
 import tf
-
 from geometry_msgs.msg import Transform, Quaternion
 from rws2020_msgs.msg import MakeAPlay
-from std_msgs.msg import String
+from rws2020_lib.utils import movePlayer, randomizePlayerPose, getDistanceAndAngleToTarget
 
 
 class Player:
 
     def __init__(self, player_name):
+
         self.player_name = player_name
+        self.listener = tf.TransformListener()
 
         red_team = rospy.get_param('/red_team')
         green_team = rospy.get_param('/green_team')
@@ -35,104 +38,37 @@ class Player:
             rospy.logerr('My name is not in any team. I want to play!')
             exit(0)
 
-        rospy.logwarn(
-            'I am ' + self.player_name + ' and I am from this team ' + self.my_team + '. ' + self.prey_team + ' players are all going die!')
-        rospy.loginfo('I am afraid of ' + str(self.hunters))
+        rospy.logwarn(self.player_name + ' starting to play ... be very afraid!!!')
 
-        # Subscribe make a play msg
-        rospy.Subscriber("make_a_play", MakeAPlay, self.makeAPlayCallBack)
         self.br = tf.TransformBroadcaster()
         self.transform = Transform()
-        # Initial_R = 8 * random.random()
-        # Initial_Theta = 2 * math.pi * random.random()
-        # Initial_X = Initial_R * math.cos(Initial_Theta)
-        # Initial_Y = Initial_R * math.sin(Initial_Theta)
-        # Initial_Rotation = 2 * math.pi * random.random()
-        # self.transform.translation.x = Initial_X
-        # self.transform.translation.y = Initial_Y
-        # # q = tf.transformations.quaternion_from_euler(0, 0, Initial_Rotation)
-        # self.transform.rotation = Quaternion( q[0], q[1], q[2], q[3])
+        randomizePlayerPose(self.transform)
 
-        self.transform.translation.x = 1
-        self.transform.translation.y = 2
-        self.transform.translation.z = 0
-        # self.transform.rotation.x = 0
-        # self.transform.rotation.y = 0
-        # self.transform.rotation.z = 0
-        self.transform.rotation.w = 1
-
+        rospy.Subscriber("make_a_play", MakeAPlay, self.makeAPlayCallBack)  # Subscribe make a play msg
 
     def makeAPlayCallBack(self, msg):
 
-        self.max_vel = msg.turtle
-        self.max_angle = math.pi / 30
-        print('Received message make a play ... my max velocity is ' + str(self.max_vel))
+        max_vel, max_angle = msg.turtle,  math.pi / 30
 
-        # Make a play
-        vel = self.max_vel  # full throttle
-        angle = self.max_angle
+        if msg.green_alive:  # PURSUIT MODE: Follow any green player (only if there is at least one green alive)
+            target = msg.green_alive[0]  # select the first alive green player (I am hunting green)
+            distance, angle = getDistanceAndAngleToTarget(self.listener, self.player_name, target)
+            vel = max_vel  # full throttle
+            rospy.loginfo(self.player_name + ': Hunting ' + str(target) + '(' + str(distance) + ' away)')
+        else:  # what else to do? Lets just move towards the center
+            target = 'world'
+            distance, angle = getDistanceAndAngleToTarget(self.listener, self.player_name, target)
+            vel = max_vel  # full throttle
+            rospy.loginfo(self.player_name + ': Moving to the center of the arena.')
+            rospy.loginfo('I am ' + str(distance) + ' from ' + target)
 
-        self.move(self.transform, vel/10, angle)
-
-    def move(self, transform_now, vel, angle):
-
-        if angle > self.max_angle:
-            angle = self.max_angle
-        elif angle < -self.max_angle:
-            angle = -self.max_angle
-
-        if vel > self.max_vel:
-            vel = self.max_vel
-
-        T1 = transform_now
-
-        T2 = Transform()
-        T2.rotation = tf.transformations.quaternion_from_euler(0, 0, angle)
-        T2.translation.x = vel
-        matrix_trans = tf.transformations.translation_matrix((T2.translation.x,
-                                                              T2.translation.y,
-                                                              T2.translation.z))
-
-        matrix_rot = tf.transformations.quaternion_matrix((T2.rotation[0],
-                                                           T2.rotation[1],
-                                                           T2.rotation[2],
-                                                           T2.rotation[3]))
-        matrixT2 = np.matmul(matrix_trans, matrix_rot)
-
-        matrix_trans = tf.transformations.translation_matrix((T1.translation.x,
-                                                              T1.translation.y,
-                                                              T1.translation.z))
-
-        matrix_rot = tf.transformations.quaternion_matrix((T1.rotation.x,
-                                                           T1.rotation.y,
-                                                           T1.rotation.z,
-                                                           T1.rotation.w))
-        matrixT1 = np.matmul(matrix_trans, matrix_rot)
-
-        matrix_new_transform = np.matmul(matrixT2, matrixT1)
-
-        quat = tf.transformations.quaternion_from_matrix(matrix_new_transform)
-        trans = tf.transformations.translation_from_matrix(matrix_new_transform)
-
-        self.transform.rotation = Quaternion(quat[0], quat[1], quat[2], quat[3])
-        self.transform.translation.x = trans[0]
-        self.transform.translation.y = trans[1]
-        self.transform.translation.z = trans[2]
-
-        self.br.sendTransform(trans, quat, rospy.Time.now(), self.player_name, "world")
-
-
-def callback(msg):
-    print("Recevied a message containing string " + msg.data)
+        # Actually move the player
+        movePlayer(self.br, self.player_name, self.transform, vel, angle, max_vel)
 
 
 def main():
-    print("Hello player node!")
-
     rospy.init_node('dnunes', anonymous=False)
     player = Player('dnunes')
-
-    rospy.Subscriber("chatter", String, callback)
     rospy.spin()
 
 
