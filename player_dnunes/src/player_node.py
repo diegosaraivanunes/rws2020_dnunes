@@ -17,6 +17,7 @@ from geometry_msgs.msg import Transform, Quaternion
 import numpy as np
 
 from visualization_msgs.msg import Marker
+from rws2020_msgs.srv import Warp, WarpResponse
 
 
 def getDistanceAndAngleToTarget(tf_listener, my_name, target_name,
@@ -160,17 +161,27 @@ class Player:
         randomizePlayerPose(self.transform)
 
         rospy.Subscriber("make_a_play", MakeAPlay, self.makeAPlayCallBack)  # Subscribe make a play msg
-        from rws2020_msgs.srv import Warp, WarpResponse
-        self.warp_server = rospy.Service('warp', Warp, self.warpServiceCallback)  # Start the server
+
+        self.warp_server = rospy.Service('~warp', Warp, self.warpServiceCallback)  # Start the server
 
     def warpServiceCallback(self, req):
-        rospy.loginfo("Someone called the service" + req.player)
+
+        rospy.loginfo("Someone called the service")
+        quat = (0, 0, 0, 1)
+        trans = (req.x, req.y, 0)
+        tf_broadcaster.sendTransform(trans, quat, rospy.Time.now(), player_name, "world")
+
+        response = WarpResponse()
+        # response.x = 0
+        # response.y = 0
+        response.success = True
+        return response
 
     def makeAPlayCallBack(self, msg):
 
         max_vel, max_angle = msg.dog, math.pi / 30
 
-        if msg.blue_alive:  # PURSUIT MODE: Follow any green player (only if there is at least one green alive)
+        if msg.blue_alive:  # PURSUIT MODE: Follow any blue player (only if there is at least one blue alive)
             target = msg.blue_alive[0]  # select the first alive blue player (I am hunting blue)
             distance, angle = getDistanceAndAngleToTarget(self.listener,
                                                           self.player_name, target)
