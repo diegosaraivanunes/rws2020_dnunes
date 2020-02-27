@@ -1,7 +1,12 @@
 #!/usr/bin/env python
+import random
+
+import math
 
 import numpy as np
+import rospy
 import tf
+from geometry_msgs.msg import Transform, Quaternion
 from rws2020_msgs.msg import MakeAPlay
 # from rws2020_lib.utils import movePlayer, randomizePlayerPose, getDistanceAndAngleToTarget
 import random
@@ -12,6 +17,7 @@ from geometry_msgs.msg import Transform, Quaternion
 import numpy as np
 
 from visualization_msgs.msg import Marker
+
 
 def getDistanceAndAngleToTarget(tf_listener, my_name, target_name,
                                 time=rospy.Time(0), max_time_to_wait=1.0):
@@ -29,10 +35,14 @@ def getDistanceAndAngleToTarget(tf_listener, my_name, target_name,
     return distance, angle
 
 
-def randomizePlayerPose(transform, arena_radius=4):
-
-    initial_r = arena_radius
-    initial_theta = 2 * math.pi
+def randomizePlayerPose(transform, arena_radius=8):
+    """
+    Randomizes the initial pose of a player. Based on the code by MGomes.
+    :param transform: a geometry_msgs.msg.Transform() which will have the values of x,y and yaw randomized.
+    :param arena_radius: the radius of the arena inside which the player can be positioned.
+    """
+    initial_r = arena_radius * random.random()
+    initial_theta = 2 * math.pi * random.random()
     initial_x = initial_r * math.cos(initial_theta)
     initial_y = initial_r * math.sin(initial_theta)
     initial_rotation = 2 * math.pi * random.random()
@@ -43,7 +53,16 @@ def randomizePlayerPose(transform, arena_radius=4):
 
 
 def movePlayer(tf_broadcaster, player_name, transform_now, vel, angle, max_vel):
-
+    """
+    Moves a player given its currrent pose, a velocity, and angle, and a maximum velocity
+    :param tf_broadcaster: Used to publish the new pose of the player
+    :param player_name:  string with the name of the player (must coincide with the name of the tf frame_id)
+    :param transform_now: a geometry_msgs.msg.Transform() containing the current pose. This variable is updated with
+                          the new player pose
+    :param vel: velocity of displacement to take in x axis
+    :param angle: angle to turn, limited by max_angle (pi/30)
+    :param max_vel: maximum velocity or displacement based on the selected animal
+    """
     max_angle = math.pi / 30
 
     if angle > max_angle:
@@ -92,19 +111,19 @@ def movePlayer(tf_broadcaster, player_name, transform_now, vel, angle, max_vel):
     tf_broadcaster.sendTransform(trans, quat, rospy.Time.now(), player_name, "world")
 
 
-class Player():
+class Player:
 
     def __init__(self, player_name):
+
         self.player_name = player_name
         self.listener = tf.TransformListener()
 
-
-        self.m = Marker(ns=self.player_name, id=0, type= Marker.TEXT_VIEW_FACING, action=Marker.ADD)
+        self.m = Marker(ns=self.player_name, id=0, type=Marker.TEXT_VIEW_FACING, action=Marker.ADD)
         self.m.header.frame_id = "dnunes"
         self.m.header.stamp = rospy.Time.now()
-        self.m.pose.position.y = 0.5
+        self.m.pose.position.y = 1
         self.m.pose.orientation.w = 1.0
-        self.m.scale.z = 0.3
+        self.m.scale.z = 0.4
         self.m.color.a = 1.0
         self.m.color.r = 0.0
         self.m.color.g = 0.0
@@ -134,24 +153,25 @@ class Player():
             rospy.logerr('My name is not in any team. I want to play!')
             exit(0)
 
-        rospy.logwarn(
-            'I am ' + self.player_name + ' and I am from this team ' + self.my_team + '. ' + self.prey_team + ' players are all going die!')
-        rospy.loginfo('I am afraid of ' + str(self.hunters))
+        rospy.logwarn(self.player_name + ' starting to play ... be very afraid!!!')
 
         self.br = tf.TransformBroadcaster()
         self.transform = Transform()
         randomizePlayerPose(self.transform)
 
-        rospy.Subscriber("make_a_play", MakeAPlay, self.makeAPlayCallBack)
+        rospy.Subscriber("make_a_play", MakeAPlay, self.makeAPlayCallBack)  # Subscribe make a play msg
 
     def makeAPlayCallBack(self, msg):
-        max_vel, max_angle = msg.cheetah, math.pi / 30
+
+        max_vel, max_angle = msg.dog, math.pi / 30
 
         if msg.blue_alive:  # PURSUIT MODE: Follow any green player (only if there is at least one green alive)
-            target = msg.blue_alive[0]
+            target = msg.blue_alive[0]  # select the first alive blue player (I am hunting blue)
+            distance, angle = getDistanceAndAngleToTarget(self.listener,
+                                                          self.player_name, target)
 
-            distance, angle = getDistanceAndAngleToTarget(self.listener, self.player_name, target)
-
+            if angle is None:
+                angle = 0
             vel = max_vel  # full throttle
             rospy.loginfo(self.player_name + ': Hunting ' + str(target) + '(' + str(distance) + ' away)')
 
@@ -174,17 +194,9 @@ class Player():
         movePlayer(self.br, self.player_name, self.transform, vel, angle, max_vel)
 
 
-def callback(msg):
-    print("received a message cointaining string" + msg.data)
-
-
 def main():
     rospy.init_node('dnunes', anonymous=False)
-
-    player = Player("dnunes")
-
-    # rospy.Subscriber("chatter",String, callback)
-
+    player = Player('dnunes')
     rospy.spin()
 
 
